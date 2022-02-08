@@ -419,34 +419,41 @@
     )
   )
 
-(defun not-wall (a) (not (isWall a)))
-
 (defun add (a b) (list (+ (car a) (car b)) (+ (cadr a) (cadr b))))
 
-(defun is-free (s box dirs)
-  (cond
-    ((null dirs) t)
-    (t (and (not-wall (get-square2 s (add box (car dirs)))) (is-free s box (cdr dirs))))
+(defun is-stuck (s box)
+  (let
+      (
+        (above (isWall (get-square2 s (add box '(0 1)))))
+        (below (isWall (get-square2 s (add box '(0 -1)))))
+        (right (isWall (get-square2 s (add box '(1 0)))))
+        (left  (isWall (get-square2 s (add box '(-1 0)))))
+      )
+    (or (and above right)
+        (and above left)
+        (and below right)
+        (and below left))
   )
 )
 
-(defun sum-free (s boxes)
+(defun sum-stuck (s boxes player)
   (cond
     ((null boxes) 0)
     (t
-      (if (is-free s (car boxes) '((0 1) (1 0) (0 -1) (-1 0)))
-        (+ 1 (sum-free s (cdr boxes)))
-        (sum-free s (cdr boxes))
+      (if (is-stuck s (car boxes))
+        4999
+        (+ (manhattan player (car boxes)) (sum-walled s (cdr boxes)))
         )
       )
     )
   )
 
-(defun count-free (s)
-  (sum-free s (getPiecePositions s 0 box '()))
+(defun count-stuck (s)
+  (min (sum-stuck s (getPiecePositions s 0 box '()) (getKeeperPosition s 0)) 999)
   )
 
 (defun h705505039 (s)
+  (count-stuck s)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
