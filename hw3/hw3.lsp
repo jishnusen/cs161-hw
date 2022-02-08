@@ -1,9 +1,9 @@
 ;
 ; CS161 Hw3: Sokoban
-; 
+;
 ; *********************
 ;    READ THIS FIRST
-; ********************* 
+; *********************
 ;
 ; All functions that you need to modify are marked with 'EXERCISE' in their header comments.
 ; Do not modify a-star.lsp.
@@ -14,19 +14,19 @@
 ; Do not make them return anything too large.
 ;
 ; For Allegro Common Lisp users: The free version of Allegro puts a limit on memory.
-; So, it may crash on some hard sokoban problems and there is no easy fix (unless you buy 
-; Allegro). 
+; So, it may crash on some hard sokoban problems and there is no easy fix (unless you buy
+; Allegro).
 ; Of course, other versions of Lisp may also crash if the problem is too hard, but the amount
 ; of memory available will be relatively more relaxed.
 ; Improving the quality of the heuristic will mitigate this problem, as it will allow A* to
 ; solve hard problems with fewer node expansions.
-; 
+;
 ; In either case, this limitation should not significantly affect your grade.
-; 
+;
 ; Remember that most functions are not graded on efficiency (only correctness).
 ; Efficiency can only influence your heuristic performance in the competition (which will
 ; affect your score).
-;  
+;
 ;
 
 
@@ -38,7 +38,7 @@
 
 ;
 ; For reloading modified code.
-; I found this easier than typing (load "filename") every time. 
+; I found this easier than typing (load "filename") every time.
 ;
 (defun reload()
   (load "hw3.lsp")
@@ -62,7 +62,7 @@
 ; A shortcut function.
 ; goal-test and next-states stay the same throughout the assignment.
 ; So, you can just call (sokoban <init-state> #'<heuristic-name>).
-; 
+;
 ;
 (defun sokoban (s h)
   (a* s #'goal-test #'next-states h)
@@ -130,7 +130,7 @@
 ;
 ; getKeeperPosition (s firstRow)
 ; Returns a list indicating the position of the keeper (c r).
-; 
+;
 ; Assumes that the keeper is in row >= firstRow.
 ; The top row is the zeroth row.
 ; The first (right) column is the zeroth column.
@@ -159,14 +159,14 @@
 	(t (let ((cur (car L))
 		 (res (cleanUpList (cdr L)))
 		 )
-	     (if cur 
+	     (if cur
 		 (cons cur res)
 		  res
 		 )
 	     );end let
 	   );end t
 	);end cond
-  );end 
+  );end
 
 ; EXERCISE: Modify this function to return true (t)
 ; if and only if s is a goal state of a Sokoban game.
@@ -181,28 +181,28 @@
   (cond
     ((null s) t)
     ((atom s) (not (isBox s)))
-    (t (and (goal-test (car s)) (goal-test (cdr s))))   
+    (t (and (goal-test (car s)) (goal-test (cdr s))))
     );end cond
   );end defun
 
-; EXERCISE: Modify this function to return the list of 
+; EXERCISE: Modify this function to return the list of
 ; sucessor states of s.
 ;
 ; This is the top-level next-states (successor) function.
 ; Some skeleton code is provided below.
 ; You may delete them totally, depending on your approach.
-; 
-; If you want to use it, you will need to set 'result' to be 
+;
+; If you want to use it, you will need to set 'result' to be
 ; the set of states after moving the keeper in each of the 4 directions.
 ; A pseudo-code for this is:
-; 
+;
 ; ...
 ; (result (list (try-move s UP) (try-move s DOWN) (try-move s LEFT) (try-move s RIGHT)))
 ; ...
-; 
+;
 ; You will need to define the function try-move and decide how to represent UP,DOWN,LEFT,RIGHT.
 ; Any NIL result returned from try-move can be removed by cleanUpList.
-; 
+;
 ;
 (defun next-states (s)
   (let* ((pos (getKeeperPosition s 0))
@@ -228,37 +228,49 @@
     );end cond
   );end
 
+(defun get-square2 (s c)
+  (let ((i (car c)) (j (cadr c)))
+    (cond
+      ((or (> 0 i) (> 0 j)) wall)
+      (t (or (elem (elem s j) i) wall))
+      );end cond
+    );end
+  )
+
 (defun mod-elem (a i v)
   (append (butlast a (- (length a) i)) (cons v (nthcdr (+ i 1) a)))
   );end
 
 ; sets square at i,j in s to n
 (defun set-square (s i j n)
-  (let ((r (elem s j))) 
+  (let ((r (elem s j)))
     (mod-elem s j (mod-elem r i n))
     )
 )
 
 (defun try-move (s x y dir)
-  (let* (
+  (let (
       (x_0 x)
       (y_0 y)
-      (x_1 
-        (cond 
+      (s_0 (get-square s x y))
+      )
+    (let (
+      (x_1
+        (cond
           ((equal dir 'left) (- x_0 1))
           ((equal dir 'right) (+ x_0 1))
           (t x_0)
           )
         )
-      (y_1 
-        (cond 
+      (y_1
+        (cond
           ((equal dir 'up) (- y_0 1))
           ((equal dir 'down) (+ y_0 1))
           (t y_0)
           )
         )
-      (x_2 
-        (cond 
+      (x_2
+        (cond
           ((equal dir 'left) (- x_0 2))
           ((equal dir 'right) (+ x_0 2))
           (t x_0)
@@ -270,23 +282,22 @@
           ((equal dir 'down) (+ y_0 2))
           (t y_0)
           )
-        )
-      (s_0 (get-square s x_0 y_0))
-      (s_1 (get-square s x_1 y_1))
-      (s_2 (get-square s x_2 y_2))
-      (old_space 
-        (cond
-          ((equal s_0 keeperstar) star)
-          (t blank)
-          )
-        )
-      (new_space 
-        (cond
-          ((equal s_1 star) keeperstar)
-          (t keeper)
-          )
-        )
-      );end vars
+        ))
+      (let ((s_1 (get-square s x_1 y_1)))
+        (let (
+          (old_space
+            (cond
+              ((equal s_0 keeperstar) star)
+              (t blank)
+              )
+            )
+          (new_space
+            (cond
+              ((equal s_1 star) keeperstar)
+              (t keeper)
+              )
+            )
+          );end vars
     (cond
       ((isWall s_1) nil)
       ((or (isBlank s_1) (isStar s_1))
@@ -295,31 +306,33 @@
           );end let
         )
       ((or (isBox s_1) (isBoxStar s_1))
-        (cond
-          ((or (isBlank s_2) (isStar s_2))
-            (let* (
-                (p1 (set-square s x_1 y_1 (cond ((isBoxStar s_1) keeperStar) (t keeper))))
-                (p2 (set-square p1 x_2 y_2 (cond ((isStar s_2) boxStar) (t box))))
+        (let ((s_2 (get-square s x_2 y_2)))
+          (cond
+            ((or (isBlank s_2) (isStar s_2))
+              (let* (
+                  (p1 (set-square s x_1 y_1 (cond ((isBoxStar s_1) keeperStar) (t keeper))))
+                  (p2 (set-square p1 x_2 y_2 (cond ((isStar s_2) boxStar) (t box))))
+                  )
+                (set-square p2 x_0 y_0 old_space)
                 )
-              (set-square p2 x_0 y_0 old_space)
               )
+            (t nil)
             )
-          (t nil)
           )
         )
       (t nil)
       );end cond
-    )
+    ))))
 )
 
-; EXERCISE: Modify this function to compute the trivial 
+; EXERCISE: Modify this function to compute the trivial
 ; admissible heuristic.
 ;
 (defun h0 (s)
   0
   );end
 
-; EXERCISE: Modify this function to compute the 
+; EXERCISE: Modify this function to compute the
 ; number of misplaced boxes in s.
 ;
 (defun h1 (s)
@@ -330,25 +343,18 @@
   );end
 
 ; EXERCISE: Change the name of this function to h<UID> where
-; <UID> is your actual student ID number. Then, modify this 
-; function to compute an admissible heuristic value of s. 
-; 
+; <UID> is your actual student ID number. Then, modify this
+; function to compute an admissible heuristic value of s.
+;
 ; This function will be entered in the competition.
 ; Objective: make A* solve problems as fast as possible.
-; The Lisp 'time' function can be used to measure the 
+; The Lisp 'time' function can be used to measure the
 ; running time of a function call.
 ;
 
 ;
 ; Helper function of getKeeperPosition
 ;
-(defun absolute (s)
-  (cond
-    ((> 0 s) (* s -1))
-    (t s)
-    )
-  )
-
 (defun hasStar (s piece)
   (cond
    ((isStar piece) (or (isStar s) (isKeeperStar s) (isBoxStar s)))
@@ -356,42 +362,31 @@
     )
   )
 
-(defun getPieceColumn (r col piece)
-  (cond ((null r) nil)
-	(t (if (hasStar (car r) piece)
-	       col
-	     (getPieceColumn (cdr r) (+ col 1) piece)
-	     );end if
-	   );end t
+(defun getPieceColumn (r row col piece accum)
+  (cond
+    ((null r) accum)
+    ((hasStar (car r) piece) (getPieceColumn (cdr r) row (+ col 1) piece (cons (list col row) accum)))
+    (t (getPieceColumn (cdr r) row (+ col 1) piece accum));end if
 	);end cond
   )
 
 ;
 ; getKeeperPosition (s firstRow)
 ; Returns a list indicating the position of the keeper (c r).
-; 
+;
 ; Assumes that the keeper is in row >= firstRow.
 ; The top row is the zeroth row.
 ; The first (right) column is the zeroth column.
 ;
 (defun getPiecePositions (s row piece accum)
-  (cond 
+  (cond
     ((null s) (cleanUpList accum))
-	(t 
-      (let ((col (getPieceColumn (car s) 0 piece)))
-	    (if col
-		  ;keeper is in this row
-	      (getPiecePositions (cons (mod-elem (car s) col blank) (cdr s)) row piece (cons (list col row) accum))
-		  ;otherwise move on
-		  (getPiecePositions (cdr s) (+ row 1) piece accum)
-		  );end if
-	    );end let
-	  );end t
+    (t (getPiecePositions (cdr s) (+ row 1) piece (append (getPieceColumn (car s) row 0 piece '()) accum)));end t
 	);end cond
   );end defun
 
 (defun manhattan (a b)
-  (+ (absolute (- (car a) (car b))) (absolute (- (cadr a) (cadr b))))
+  (+ (abs (- (car a) (car b))) (abs (- (cadr a) (cadr b))))
 )
 
 (defun min-manhattan-box (a bl acc)
@@ -415,13 +410,43 @@
   )
 )
 
-(defun h705505039 (s)
+(defun manhattan-heuristic (s)
   (let (
       (boxes (getPiecePositions s 0 box '()))
       (stars (getPiecePositions s 0 star '()))
       )
       (sum-all (min-manhattan boxes stars '()) 0)
     )
+  )
+
+(defun not-wall (a) (not (isWall a)))
+
+(defun add (a b) (list (+ (car a) (car b)) (+ (cadr a) (cadr b))))
+
+(defun is-free (s box dirs)
+  (cond
+    ((null dirs) t)
+    (t (and (not-wall (get-square2 s (add box (car dirs)))) (is-free s box (cdr dirs))))
+  )
+)
+
+(defun sum-free (s boxes)
+  (cond
+    ((null boxes) 0)
+    (t
+      (if (is-free s (car boxes) '((0 1) (1 0) (0 -1) (-1 0)))
+        (+ 1 (sum-free s (cdr boxes)))
+        (sum-free s (cdr boxes))
+        )
+      )
+    )
+  )
+
+(defun count-free (s)
+  (sum-free s (getPiecePositions s 0 box '()))
+  )
+
+(defun h705505039 (s)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -433,16 +458,16 @@
  | For most problems, we also privide 2 additional number per problem:
  |    1) # of nodes expanded by A* using our next-states and h0 heuristic.
  |    2) the depth of the optimal solution.
- | These numbers are located at the comments of the problems. For example, the first problem below 
+ | These numbers are located at the comments of the problems. For example, the first problem below
  | was solved by 80 nodes expansion of A* and its optimal solution depth is 7.
- | 
+ |
  | Your implementation may not result in the same number of nodes expanded, but it should probably
- | give something in the same ballpark. As for the solution depth, any admissible heuristic must 
+ | give something in the same ballpark. As for the solution depth, any admissible heuristic must
  | make A* return an optimal solution. So, the depths of the optimal solutions provided could be used
  | for checking whether your heuristic is admissible.
  |
  | Warning: some problems toward the end are quite hard and could be impossible to solve without a good heuristic!
- | 
+ |
  |#
 
 ;(80,7)
@@ -465,9 +490,9 @@
 
 ;(110,10)
 (setq p2 '((1 1 1 1 1 1 1)
-	   (1 0 0 0 0 0 1) 
-	   (1 0 0 0 0 0 1) 
-	   (1 0 0 2 1 4 1) 
+	   (1 0 0 0 0 0 1)
+	   (1 0 0 0 0 0 1)
+	   (1 0 0 2 1 4 1)
 	   (1 3 0 0 1 0 1)
 	   (1 1 1 1 1 1 1)))
 
@@ -523,10 +548,10 @@
 
 ;(1806,41)
 (setq p9 '((1 1 1 1 1 1 1 1 1)
-	   (1 1 1 0 0 1 1 1 1) 
-	   (1 0 0 0 0 0 2 0 1) 
-	   (1 0 1 0 0 1 2 0 1) 
-	   (1 0 4 0 4 1 3 0 1) 
+	   (1 1 1 0 0 1 1 1 1)
+	   (1 0 0 0 0 0 2 0 1)
+	   (1 0 1 0 0 1 2 0 1)
+	   (1 0 4 0 4 1 3 0 1)
 	   (1 1 1 1 1 1 1 1 1)))
 
 ;(10082,51)
@@ -571,7 +596,7 @@
 ;(41715,53)
 (setq p14 '((0 0 1 0 0 0 0)
 	    (0 2 1 4 0 0 0)
-	    (0 2 0 4 0 0 0)	   
+	    (0 2 0 4 0 0 0)
 	    (3 2 1 1 1 0 0)
 	    (0 0 1 4 0 0 0)))
 
@@ -616,7 +641,7 @@
 	    (0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0)
 	    (0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0)
 	    (0 0 0 0 1 0 0 0 0 0 4 1 0 0 0 0)
-	    (0 0 0 0 1 0 2 0 0 0 0 1 0 0 0 0)	    
+	    (0 0 0 0 1 0 2 0 0 0 0 1 0 0 0 0)
 	    (0 0 0 0 1 0 2 0 0 0 4 1 0 0 0 0)
 	    ))
 ;(??,21)
@@ -726,7 +751,7 @@
 ;
 (defun printRow (r)
   (dolist (cur r)
-    (printSquare cur)    
+    (printSquare cur)
     )
   );
 
@@ -734,7 +759,7 @@
 ; Print a state
 ;
 (defun printState (s)
-  (progn    
+  (progn
     (dolist (cur s)
       (printRow cur)
       (format t "~%")
