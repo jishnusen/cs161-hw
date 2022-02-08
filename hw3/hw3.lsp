@@ -228,6 +228,7 @@
     );end cond
   );end
 
+; get square with coordinate pair instead of two coordinates
 (defun get-square2 (s c)
   (let ((i (car c)) (j (cadr c)))
     (cond
@@ -237,6 +238,7 @@
     );end
   )
 
+; changese element i in a to v
 (defun mod-elem (a i v)
   (append (butlast a (- (length a) i)) (cons v (nthcdr (+ i 1) a)))
   );end
@@ -248,6 +250,8 @@
     )
 )
 
+; result of move up/down/left/right as specified by dir.
+; player position is x y, field state s. nil if impossible.
 (defun try-move (s x y dir)
   (let (
       (x_0 x)
@@ -352,75 +356,32 @@
 ; running time of a function call.
 ;
 
-;
-; Helper function of getKeeperPosition
-;
-(defun hasStar (s piece)
-  (cond
-   ((isStar piece) (or (isStar s) (isKeeperStar s) (isBoxStar s)))
-   (t (equal piece s))
-    )
-  )
-
-(defun getPieceColumn (r row col piece accum)
+; get coordinates of all boxes in column. uses accumulator for tail recursion
+(defun getBoxesColumn (r row col accum)
   (cond
     ((null r) accum)
-    ((hasStar (car r) piece) (getPieceColumn (cdr r) row (+ col 1) piece (cons (list col row) accum)))
-    (t (getPieceColumn (cdr r) row (+ col 1) piece accum));end if
+    ((isBox (car r)) (getBoxesColumn (cdr r) row (+ col 1) (cons (list col row) accum)))
+    (t (getBoxesColumn (cdr r) row (+ col 1) accum));end if
 	);end cond
   )
 
-;
-; getKeeperPosition (s firstRow)
-; Returns a list indicating the position of the keeper (c r).
-;
-; Assumes that the keeper is in row >= firstRow.
-; The top row is the zeroth row.
-; The first (right) column is the zeroth column.
-;
-(defun getPiecePositions (s row piece accum)
+; list of all box coordinates in s starting from row. uses accum as accumulator
+(defun getBoxPositions (s row accum)
   (cond
     ((null s) (cleanUpList accum))
-    (t (getPiecePositions (cdr s) (+ row 1) piece (append (getPieceColumn (car s) row 0 piece '()) accum)));end t
+    (t (getBoxPositions (cdr s) (+ row 1) (append (getBoxesColumn (car s) row 0 '()) accum)));end t
 	);end cond
   );end defun
 
+; manhattan distance between two 2D coordinates pairs
 (defun manhattan (a b)
   (+ (abs (- (car a) (car b))) (abs (- (cadr a) (cadr b))))
 )
 
-(defun min-manhattan-box (a bl acc)
-  (cond
-    ((null bl) acc)
-    (t (min-manhattan-box a (cdr bl) (min acc (manhattan a (car bl)))))
-    );end cond
-  );end
-
-(defun min-manhattan (al bl acc)
-  (cond
-    ((null al) acc)
-    (t (min-manhattan (cdr al) bl (cons (min-manhattan-box (car al) bl 5000) acc)))
-  )
-)
-
-(defun sum-all (a acc)
-  (cond
-    ((null a) acc)
-    (t (+ (car a) (sum-all (cdr a) acc)))
-  )
-)
-
-(defun manhattan-heuristic (s)
-  (let (
-      (boxes (getPiecePositions s 0 box '()))
-      (stars (getPiecePositions s 0 star '()))
-      )
-      (sum-all (min-manhattan boxes stars '()) 0)
-    )
-  )
-
+; 2D vector sum
 (defun add (a b) (list (+ (car a) (car b)) (+ (cadr a) (cadr b))))
 
+; checks if box is stuck. ie walls at corners.
 (defun is-stuck (s box)
   (let
       (
@@ -436,25 +397,23 @@
   )
 )
 
+; assigns max cost to stuck boxes, otherwise manhattaan dist player to box
 (defun sum-stuck (s boxes player)
   (cond
     ((null boxes) 0)
     (t
       (if (is-stuck s (car boxes))
         4999
-        (+ (manhattan player (car boxes)) (sum-walled s (cdr boxes)))
+        (+ (manhattan player (car boxes)) (sum-stuck s (cdr boxes) player))
         )
       )
     )
   )
 
-(defun count-stuck (s)
-  (min (sum-stuck s (getPiecePositions s 0 box '()) (getKeeperPosition s 0)) 999)
-  )
-
+; call sum-stuck
 (defun h705505039 (s)
-  (count-stuck s)
-)
+  (min (sum-stuck s (getBoxPositions s 0 '()) (getKeeperPosition s 0)) 999)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
